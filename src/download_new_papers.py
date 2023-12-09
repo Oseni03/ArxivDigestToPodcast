@@ -6,6 +6,8 @@ import urllib.request
 import json
 import datetime
 import pytz
+import requests
+from pypdf import PdfReader, errors
 
 
 def _download_new_papers(field_abbr):
@@ -62,3 +64,50 @@ def get_papers(field_abbr, limit=None):
                 return results
             results.append(json.loads(line))
     return results
+
+
+def read_paper(title, pdf_url):
+    if not os.path.exists("papers"):
+        os.mkdir("papers")
+
+    try:
+        paper_pdf_filename = f"papers/{title}.pdf"
+        paper_pdf_file = open(paper_pdf_filename, "wb")
+
+        # Fetch the PDF content from the provided URL
+        response = requests.get(pdf_url)
+        response.raise_for_status()  # Check for any request errors
+        
+        # Save the PDF content to a file (Optional)
+        paper_pdf_file.write(response.content)
+        paper_pdf_file.close()
+        
+        # Read text from the downloaded PDF
+        pdf_reader = PdfReader(paper_pdf_filename)
+        print(len(pdf_reader.pages))
+        print()
+        
+        # Extract text from each page
+        pdf_text = ''
+        for page_num in range(len(pdf_reader.pages)):
+            page = pdf_reader.pages[page_num]
+            pdf_text += page.extract_text()
+
+        # os.remove(paper_pdf_filename)
+        # print(f"File '{title}' has been deleted.")
+        return pdf_text
+    
+    except errors.PyPdfError as e:
+        print("Error reading the PDF:", e)
+        return None
+
+
+if __name__ == "__main__":
+    # Provide the URL of the PDF file
+    pdf_url = 'https://arxiv.org/pdf/2312.04567'  # Replace this with your PDF URL
+    text_from_pdf = read_paper('sample', pdf_url)
+
+    if text_from_pdf:
+        print("Text extracted from the PDF:")
+        print(text_from_pdf)
+

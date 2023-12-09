@@ -9,7 +9,8 @@ import os
 from dotenv import load_dotenv
 import openai
 from relevancy import generate_relevance_score, process_subject_fields
-from download_new_papers import get_papers
+from download_new_papers import get_papers, read_paper
+from podcast import generate_podcast
 
 
 # Hackathon quality code. Don't judge too harshly.
@@ -267,7 +268,7 @@ def generate_body(topic, categories, interest, threshold):
                 for paper in papers
             ]
         )
-    return body
+    return body, relevancy
 
 
 if __name__ == "__main__":
@@ -291,7 +292,7 @@ if __name__ == "__main__":
     to_email = os.environ.get("TO_EMAIL")
     threshold = config["threshold"]
     interest = config["interest"]
-    body = generate_body(topic, categories, interest, threshold)
+    body, relevancy = generate_body(topic, categories, interest, threshold)
     with open("digest.html", "w") as f:
         f.write(body)
     if os.environ.get("SENDGRID_API_KEY", None):
@@ -311,3 +312,14 @@ if __name__ == "__main__":
             print("Send test email: Failure ({response.status_code}, {response.text})")
     else:
         print("No sendgrid api key found. Skipping email")
+    
+
+    for paper in relevancy:
+        pdf = paper["pdf"]
+        title = paper["title"]
+
+        title_slug = title.lower().replace(" ", "_")
+
+        pdf_text = read_paper(title_slug, pdf)
+
+        podcast_file_name, transcript_file_name = generate_podcast(pdf_text)
