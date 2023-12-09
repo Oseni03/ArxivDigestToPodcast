@@ -323,3 +323,6 @@ if __name__ == "__main__":
         pdf_text = read_paper(title_slug, pdf)
 
         podcast_file_name, transcript_file_name = generate_podcast(pdf_text)
+
+        paper["podcast_file_name"] = podcast_file_name
+        paper["transcript_file_name"] = transcript_file_name
