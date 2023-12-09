@@ -161,6 +161,15 @@ def generate_dialog(paper_content, podcast_id):
     return (dialogs, transcript_file_name)
 
 
+def generate_audio(speaker, gender, content, filename):
+    audio = generate(
+        text=content,
+        voice=get_voice(speaker, gender.lower()),
+        model="eleven_monolingual_v1"
+    )
+    save(audio, filename) # type: ignore
+
+
 def generate_podcast(paper_content, podcast_id=f"{time.time()}"):
     dialog_files = []
     concat_file = open("concat.txt", "w")
@@ -172,17 +181,12 @@ def generate_podcast(paper_content, podcast_id=f"{time.time()}"):
     print("Generating audio")
     try:
         for i, dialog in enumerate(dialogs):
-            audio = generate(
-                text=dialog["content"],
-                voice=get_voice(dialog["speaker"], dialog["gender"].lower()),
-                model="eleven_monolingual_v1"
-            )
-
             filename = f"dialogs/dialog{i}.wav"
+
+            generate_audio(dialog["speaker"], dialog["gender"], dialog["content"], filename)
+
             concat_file.write("file " + filename + "\n")
             dialog_files.append(filename)
-
-            save(audio, filename) # type: ignore
     except RateLimitError:
         print("ERROR: ElevenLabs ratelimit exceeded!")
 
